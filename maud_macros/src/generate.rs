@@ -115,30 +115,31 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
-        for Attribute { name, attr_type } in desugar_attrs(attrs) {
-            match attr_type {
-                AttrType::Normal { value } => {
-                    build.push_str(" ");
-                    self.name(name, build);
-                    build.push_str("=\"");
-                    self.markup(value, build);
-                    build.push_str("\"");
-                }
-                AttrType::Empty { toggler: None } => {
-                    build.push_str(" ");
-                    self.name(name, build);
-                }
-                AttrType::Empty {
-                    toggler: Some(toggler),
-                } => {
+        for Attribute { name, toggler, value } in desugar_attrs(attrs) {
+            match toggler {
+                Some(toggler) => {
                     let head = desugar_toggler(toggler);
                     build.push_tokens({
                         let mut build = self.builder();
                         build.push_str(" ");
                         self.name(name, &mut build);
+                        if let Some(value) = value {
+                            build.push_str("=\"");
+                            self.markup(value, &mut build);
+                            build.push_str("\"");
+                        }
                         let body = build.finish();
                         quote!(#head { #body })
                     })
+                }
+                _ => {
+                    build.push_str(" ");
+                    self.name(name, build);
+                    if let Some(value) = value {
+                        build.push_str("=\"");
+                        self.markup(value, build);
+                        build.push_str("\"");
+                    }
                 }
             }
         }
@@ -209,12 +210,11 @@ fn desugar_classes_or_ids(
     }
     Some(Attribute {
         name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
-        attr_type: AttrType::Normal {
-            value: Markup::Block(Block {
-                markups,
-                outer_span: SpanRange::call_site(),
-            }),
-        },
+        toggler: None,
+        value: Some(Markup::Block(Block {
+            markups,
+            outer_span: SpanRange::call_site(),
+        })),
     })
 }
 

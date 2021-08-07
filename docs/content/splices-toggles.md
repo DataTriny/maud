@@ -140,6 +140,20 @@ html! {
 # ;
 ```
 
+On attributes that have a value:
+
+```rust
+let has_value = true;
+let value = "Already filled before";
+# let _ = maud::
+html! {
+    input type="text"
+        value[has_value]=(value)
+        required;
+}
+# ;
+```
+
 And classes:
 
 ```rust

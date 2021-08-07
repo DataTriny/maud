@@ -153,31 +153,24 @@ impl Special {
 #[derive(Debug)]
 pub struct Attribute {
     pub name: TokenStream,
-    pub attr_type: AttrType,
+    pub toggler: Option<Toggler>,
+    pub value: Option<Markup>,
 }
 
 impl Attribute {
     fn span(&self) -> SpanRange {
         let name_span = span_tokens(self.name.clone());
-        if let Some(attr_type_span) = self.attr_type.span() {
-            name_span.join_range(attr_type_span)
-        } else {
-            name_span
+        let name_toggler_span = if let Some(ref toggler) = self.toggler {
+            name_span.join_range(toggler.span())
         }
-    }
-}
-
-#[derive(Debug)]
-pub enum AttrType {
-    Normal { value: Markup },
-    Empty { toggler: Option<Toggler> },
-}
-
-impl AttrType {
-    fn span(&self) -> Option<SpanRange> {
-        match *self {
-            AttrType::Normal { ref value } => Some(value.span()),
-            AttrType::Empty { ref toggler } => toggler.as_ref().map(Toggler::span),
+        else {
+            name_span
+        };
+        if let Some(ref value) = self.value {
+            name_toggler_span.join_range(value.span())
+        }
+        else {
+            name_toggler_span
         }
     }
 }

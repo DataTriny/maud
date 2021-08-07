@@ -4,6 +4,8 @@
 
 - Support `no_std` + `alloc`.
   [#278](https://github.com/lambda-fairy/maud/issues/278)
+- Allow toggling attributes that have a value.
+  [#](https://github.com/lambda-fairy/maud/pull/)
 
 ## [0.22.2] - 2021-01-09
 

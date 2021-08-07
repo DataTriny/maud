@@ -228,7 +228,22 @@ fn toggle_classes_string() {
     let is_cupcake = true;
     let is_muffin = false;
     let result = html! { p."cupcake"[is_cupcake]."is_muffin"[is_muffin] { "Testing!" } };
-    assert_eq!(result.into_string(), r#"<p class="cupcake">Testing!</p>"#);
+       assert_eq!(result.into_string(), r#"<p class="cupcake">Testing!</p>"#);
+}
+
+#[test]
+fn toggle_attribute_with_value() {
+    let has_placeholder = true;
+    let placeholder = "Type here...";
+    let result = html! { input placeholder[has_placeholder]=(placeholder); };
+    assert_eq!(result.into_string(), r#"<input placeholder="Type here...">"#);
+}
+
+#[test]
+fn hide_attribute_with_value() {
+    let value: Option<&str> = None;
+    let result = html! { input value[value.is_some()]=(value.unwrap()) required; };
+    assert_eq!(result.into_string(), r#"<input required>"#);
 }
 
 #[test]

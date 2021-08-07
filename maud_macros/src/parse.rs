@@ -564,21 +564,6 @@ impl Parser {
             if let Some(name) = self.try_namespaced_name() {
                 // Attribute
                 match self.peek() {
-                    // Non-empty attribute
-                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
-                        self.advance();
-                        // Parse a value under an attribute context
-                        assert!(self.current_attr.is_none());
-                        self.current_attr = Some(ast::name_to_string(name.clone()));
-                        let value = self.markup();
-                        self.current_attr = None;
-                        attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute {
-                                name,
-                                attr_type: ast::AttrType::Normal { value },
-                            },
-                        });
-                    }
                     // Empty attribute (legacy syntax)
                     Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
                         self.advance();
@@ -586,19 +571,41 @@ impl Parser {
                         attrs.push(ast::Attr::Attribute {
                             attribute: ast::Attribute {
                                 name: name.clone(),
-                                attr_type: ast::AttrType::Empty { toggler },
+                                toggler,
+                                value: None,
                             },
                         });
                     }
-                    // Empty attribute (new syntax)
                     _ => {
                         let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute {
-                                name: name.clone(),
-                                attr_type: ast::AttrType::Empty { toggler },
-                            },
-                        });
+                        match self.peek() {
+                            // Non-empty attribute
+                            Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
+                                self.advance();
+                                // Parse a value under an attribute context
+                                assert!(self.current_attr.is_none());
+                                self.current_attr = Some(ast::name_to_string(name.clone()));
+                                let value = self.markup();
+                                self.current_attr = None;
+                                attrs.push(ast::Attr::Attribute {
+                                    attribute: ast::Attribute {
+                                        name,
+                                        toggler,
+                                        value: Some(value),
+                                    },
+                                });
+                            }
+                            // Empty attribute (new syntax)
+                            _ => {
+                                attrs.push(ast::Attr::Attribute {
+                                    attribute: ast::Attribute {
+                                        name: name.clone(),
+                                        toggler,
+                                        value: None,
+                                    },
+                                });
+                            }
+                        }
                     }
                 }
             } else {
@@ -673,7 +680,7 @@ impl Parser {
         }
     }
 
-    /// Parses the `[cond]` syntax after an empty attribute or class shorthand.
+    /// Parses the `[cond]` syntax after an attribute name or class shorthand.
     fn attr_toggler(&mut self) -> Option<ast::Toggler> {
         match self.peek() {
             Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Bracket => {
